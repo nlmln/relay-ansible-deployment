@@ -1,0 +1,10 @@
+[Unit]
+Description=Start the startup.py script for relay control functionality
+
+[Service]
+User=relay
+Group=relay
+ExecStart=/opt/startup/startup.py
+
+[Install]
+WantedBy=multi-user.target
