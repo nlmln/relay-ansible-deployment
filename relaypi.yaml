@@ -35,6 +35,7 @@
   - name: Install python and git, dependencies for our software and apt-transport-https dependency for tailscale
     apt:
       name:
+        - curl
         - python3-full
         - python3-flask
         - python3-rpi.gpio
@@ -43,10 +44,10 @@
       state: present
       update_cache: true
 
-  #TODO: this sucks, find a better way to add repository or install tailscale in a different way
+  #TODO: this sucks, find a better way to add repository or install tailscale in a different way, using /debian/ instead of raspbian because there's no raspbian bookworm release
   - name: Download tailscale-archive-keyring.gpg and tailscale.list to add repository,
     get_url:
-      url: 'https://pkgs.tailscale.com/stable/raspbian/{{ ansible_distribution_version_codename}}.noarmor.gpg'
+      url: 'https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg'
       dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
       mode: 0644
       group: root
@@ -54,7 +55,7 @@
     become: yes
     become_method: sudo
     get_url:
-      url: 'https://pkgs.tailscale.com/stable/raspbian/{{ ansible_distribution_version_codename}}.tailscale-keyring.list'
+      url: 'https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.tailscale-keyring.list'
       dest: /etc/apt/sources.list.d/tailscale.list
       mode: 0644
       group: root
@@ -105,7 +106,7 @@
   - name: Create a Directory /opt/startup/templates
     become: yes
     file:
-      path: /opt/startup
+      path: /opt/startup/templates
       state: directory
       mode: 0755
       owner: relay
@@ -128,13 +129,15 @@
 
   - name: Download the relay.service systemd service
     get_url:
-      url: https://www.sasaa.nl/.raspi/relay.service
+      #url: https://www.sasaa.nl/.raspi/relay.service
+      #file is not up yet, temporarily pointing to github.io webserver
+      url: https://nlmln.github.io/relay.service
       dest: /etc/systemd/system/relay.service
       mode: 0755
       group: root
       owner: root
-      become: yes
-      become_method: sudo
+    become: yes
+    become_method: sudo
 
   - name: Enable and start the relay service
     systemd: state=started name=relay daemon_reload=yes
@@ -142,12 +145,14 @@
 #this should be kept as the last thing in the playbook because in most cases it will cause ansible to disconnect quickly after being applied
   - name: Set static IPv4 IP via NetworkManager
     nmcli:
-      type: connection
-      con_name: Wired connection 1
-      modify: true
-      ipv4.addresses: 10.10.115.2/24
-      ipv4.gateway: 10.10.115.250
-      ipv4.dns: 62.179.104.196, 213.46.228.196
+      type: ethernet
+      conn_name: Wired connection 1
+      ip4: 10.10.115.2/24
+      gw4: 10.10.115.250
+      dns4: 
+      - 62.179.104.196
+      - 213.46.228.196
+      state: present
     become: yes
     become_method: sudo
 
