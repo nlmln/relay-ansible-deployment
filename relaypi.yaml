@@ -1,6 +1,7 @@
 #let's set some boundaries, due to raspbian nowadays requiring a manual setup on first boot, this playbook assumes a user has already been created, it assumes said user is in the sudo group and that "%sudo ALL=(ALL) NOPASSWD:ALL" is set in the sudoers file
 #SSH is obviously mandatory to deploy anything to the pi
 #tailscale will also need to be manually logged into because I do not fancy adding api keys to this file
+#unless variable -k is used at deployment a ssh key is required in the pi (eg: 'mkdir ~/.ssh && curl -o ~/.ssh/authorized_keys https://github.com/nlmln.keys')
 - name: Deploy Pi with bowling control software
   hosts: all
   vars:
@@ -53,7 +54,7 @@
       group: root
       owner: root
     become: yes
-    
+
   - name: Download tailscale.list to add tailscale repository
     become_method: sudo
     get_url:
@@ -143,6 +144,10 @@
 
   - name: Enable and start the relay service
     systemd: state=started name=relay daemon_reload=yes
+
+  - name: Set a hostname
+  ansible.builtin.hostname:
+    name: relay
 
 #this should be kept as the last thing in the playbook because in most cases it will cause ansible to disconnect quickly after being applied
   - name: Set static IPv4 IP via NetworkManager
