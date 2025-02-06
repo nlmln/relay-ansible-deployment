@@ -1,0 +1,153 @@
+#let's set some boundaries, due to raspbian nowadays requiring a manual setup on first boot, this playbook assumes a user has already been created, it assumes said user is in the sudo group and that "%sudo ALL=(ALL) NOPASSWD:ALL" is set in the sudoers file
+#SSH is obviously mandatory to deploy anything to the pi
+#tailscale will also need to be manually logged into because I do not fancy adding api keys to this file
+- name: Deploy Pi with bowling control software
+  hosts: all
+  vars:
+    sysctl_config:
+      net.ipv4.ip_forward: 1
+      net.ipv6.conf.all.forwarding: 1
+  become: true
+
+  tasks:
+
+  - name: Add the group 'relay'
+    group:
+      name: relay
+      state: present
+
+  - name: Add the user 'relay'
+    ansible.builtin.user:
+      name: relay
+      groups: relay
+      shell: /sbin/nologin
+      append: yes
+    become: yes
+    become_method: sudo
+
+  - name: Upgrade all apt packages
+    apt:
+      force_apt_get: yes
+      upgrade: dist
+    become: yes
+    become_method: sudo
+
+  - name: Install python and git, dependencies for our software and apt-transport-https dependency for tailscale
+    apt:
+      name:
+        - python3-full
+        - python3-flask
+        - python3-rpi.gpio
+        - git
+        - apt-transport-https
+      state: present
+      update_cache: true
+
+  #TODO: this sucks, find a better way to add repository or install tailscale in a different way
+  - name: Download tailscale-archive-keyring.gpg and tailscale.list to add repository,
+    get_url:
+      url: 'https://pkgs.tailscale.com/stable/raspbian/{{ ansible_distribution_version_codename}}.noarmor.gpg'
+      dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+      mode: 0644
+      group: root
+      owner: root
+    become: yes
+    become_method: sudo
+    get_url:
+      url: 'https://pkgs.tailscale.com/stable/raspbian/{{ ansible_distribution_version_codename}}.tailscale-keyring.list'
+      dest: /etc/apt/sources.list.d/tailscale.list
+      mode: 0644
+      group: root
+      owner: root
+    become: yes
+    become_method: sudo
+       
+  - name: Update repositories and cache to index new packages from third party repository
+    apt:
+      update_cache: yes
+      force_apt_get: yes
+      cache_valid_time: 3600
+    become: yes
+    become_method: sudo
+
+  - name: Install utility software
+    apt:
+        name:
+          - vim
+          - tailscale
+        state: present
+        update_cache: true
+
+  - name: Enable IP forwarding for tailscale
+    ansible.posix.sysctl:
+      name: '{{ item.key }}'
+      value: '{{ item.value }}'
+      sysctl_set: true
+    with_dict: '{{ sysctl_config }}'
+
+  - name: Create a Directory /opt/startup
+    file:
+      path: /opt/startup
+      state: directory
+      mode: 0755
+      owner: relay
+      group: relay
+    become: yes
+
+  - name: Download startup script into /opt/startup
+    get_url:
+      url: https://www.sasaa.nl/.raspi/startup.py
+      dest: /opt/startup/startup.py
+      mode: 0755
+      group: relay
+      owner: relay
+
+  - name: Create a Directory /opt/startup/templates
+    become: yes
+    file:
+      path: /opt/startup
+      state: directory
+      mode: 0755
+      owner: relay
+      group: relay
+
+#TODO: distribute webui as a tar file to ease future updates
+  - name: Download webui elements in /opt/startup/templates
+    get_url:
+      url: https://www.sasaa.nl/.raspi/bowling.html
+      dest: /opt/startup/templates/bowling.html
+      mode: 0644
+      group: relay
+      owner: relay
+    get_url:
+      url: https://www.sasaa.nl/.raspi/timers.html
+      dest: /opt/startup/templates/timers.html
+      mode: 0644
+      group: relay
+      owner: relay
+
+  - name: Download the relay.service systemd service
+    get_url:
+      url: https://www.sasaa.nl/.raspi/relay.service
+      dest: /etc/systemd/system/relay.service
+      mode: 0755
+      group: root
+      owner: root
+      become: yes
+      become_method: sudo
+
+  - name: Enable and start the relay service
+    systemd: state=started name=relay daemon_reload=yes
+
+#this should be kept as the last thing in the playbook because in most cases it will cause ansible to disconnect quickly after being applied
+  - name: Set static IPv4 IP via NetworkManager
+    nmcli:
+      type: connection
+      con_name: Wired connection 1
+      modify: true
+      ipv4.addresses: 10.10.115.2/24
+      ipv4.gateway: 10.10.115.250
+      ipv4.dns: 62.179.104.196, 213.46.228.196
+    become: yes
+    become_method: sudo
+
