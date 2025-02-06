@@ -45,7 +45,7 @@
       update_cache: true
 
   #TODO: this sucks, find a better way to add repository or install tailscale in a different way, using /debian/ instead of raspbian because there's no raspbian bookworm release
-  - name: Download tailscale-archive-keyring.gpg and tailscale.list to add repository,
+  - name: Download tailscale-archive-keyring.gpg to add tailscale repository
     get_url:
       url: 'https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg'
       dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
@@ -53,6 +53,8 @@
       group: root
       owner: root
     become: yes
+    
+  - name: Download tailscale.list to add tailscale repository
     become_method: sudo
     get_url:
       url: 'https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.tailscale-keyring.list'
