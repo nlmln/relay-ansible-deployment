@@ -1,2 +1,2 @@
 # relay-ansible-deployment
-Ansible deployment for the relay software for the bowling alley
+Ansible deployment of the relay software for the bowling alley
