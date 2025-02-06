@@ -145,7 +145,7 @@
   - name: Enable and start the relay service
     systemd: state=started name=relay daemon_reload=yes
 
-  - name: Set a hostname
+  - name: Set hostname relay for DNS discovery, making pi reachable at http://relay
   ansible.builtin.hostname:
     name: relay
 
