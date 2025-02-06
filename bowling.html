@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bowling lane Controls</title>
+    <script>
+        function activatePin(pin) {
+            fetch(`/activate/${pin}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateStatus();
+                    }
+                });
+        }
+
+        function subtractTime(pin) {
+            fetch(`/subtract/${pin}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateStatus();
+                    }
+                });
+        }
+
+        function cancelTimer(pin) {
+            fetch(`/cancel/${pin}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateStatus();
+                    }
+                });
+        }
+
+        function resetAll() {
+            fetch('/reset', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateStatus();
+                    }
+                });
+        }
+
+        function updateStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    for (const pin in data.timers) {
+                        document.getElementById(`timer-${pin}`).innerText = data.timers[pin]; // Already formatted
+                        document.getElementById(`status-${pin}`).innerText = data.active[pin] ? 'Active' : 'Inactive';
+                    }
+                });
+        }
+
+        setInterval(updateStatus, 1000);
+    </script>
+</head>
+<body>
+<font size=4>
+    <style>
+            html, body, table, h1{
+    text-align: center;
+}
+</style>
+    <table align="center" border="2px">
+        <tr>
+            <th width="100px">Lane</th>
+            <th width="120px">Time</th>
+            <th width="150px">Status</th>
+            <th width="150px">Actions</th>
+        </tr>
+        {% for pin in timers.keys() %}
+        <tr>
+            <td>{{ loop.index }}</td> <!-- Row number -->
+            <td id="timer-{{ pin }}">{{ (timers[pin] // 60) }}:{{ '%02d' % (timers[pin] % 60) }}</td>
+            <td id="status-{{ pin }}">{{ 'Active' if active[pin] else 'Inactive' }}</td>
+            <td>
+                <button onclick="activatePin({{ pin }})">+</button>
+                <button onclick="subtractTime({{ pin }})">-</button>
+                <button onclick="cancelTimer({{ pin }})">Reset</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </font>
+    </table>
+    <button onclick="resetAll()">Reset All lanes</button>
+</body>
+</html>
