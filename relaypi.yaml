@@ -24,14 +24,12 @@
       shell: /sbin/nologin
       append: yes
     become: yes
-    become_method: sudo
 
   - name: Upgrade all apt packages
     apt:
       force_apt_get: yes
       upgrade: dist
     become: yes
-    become_method: sudo
 
   - name: Install python and git, dependencies for our software and apt-transport-https dependency for tailscale
     apt:
@@ -56,7 +54,6 @@
     become: yes
 
   - name: Download tailscale.list to add tailscale repository
-    become_method: sudo
     get_url:
       url: 'https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.tailscale-keyring.list'
       dest: /etc/apt/sources.list.d/tailscale.list
@@ -64,7 +61,6 @@
       group: root
       owner: root
     become: yes
-    become_method: sudo
        
   - name: Update repositories and cache to index new packages from third party repository
     apt:
@@ -72,7 +68,6 @@
       force_apt_get: yes
       cache_valid_time: 3600
     become: yes
-    become_method: sudo
 
   - name: Install utility software
     apt:
@@ -140,14 +135,13 @@
       group: root
       owner: root
     become: yes
-    become_method: sudo
 
   - name: Enable and start the relay service
     systemd: state=started name=relay daemon_reload=yes
 
   - name: Set hostname relay for DNS discovery, making pi reachable at http://relay
-  ansible.builtin.hostname:
-    name: relay
+    ansible.builtin.hostname:
+      name: relay
 
 #this should be kept as the last thing in the playbook because in most cases it will cause ansible to disconnect quickly after being applied
   - name: Set static IPv4 IP via NetworkManager
@@ -161,5 +155,4 @@
       - 213.46.228.196
       state: present
     become: yes
-    become_method: sudo
 
