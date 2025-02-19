@@ -127,9 +127,7 @@
 
   - name: Download the relay.service systemd service
     get_url:
-      #url: https://www.sasaa.nl/.raspi/relay.service
-      #file is not up yet, temporarily pointing to github.io webserver
-      url: https://nlmln.github.io/relay.service
+      url: https://www.sasaa.nl/.raspi/relay.service
       dest: /etc/systemd/system/relay.service
       mode: 0755
       group: root
