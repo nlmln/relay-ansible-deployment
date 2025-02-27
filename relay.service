@@ -2,8 +2,8 @@
 Description=Start the startup.py script for relay control functionality
 
 [Service]
-User=relay
-Group=relay
+User=root
+Group=root
 ExecStart=/opt/startup/startup.py
 
 [Install]

@@ -12,6 +12,7 @@
 
   tasks:
 
+  #TODO: switch away from using root to actually using user relay, startup.py currently depends on accessing /dev/mem
   - name: Add the group 'relay'
     group:
       name: relay
@@ -43,6 +44,7 @@
       state: present
       update_cache: true
 
+  #TODO: deploy tailscale with API keys instead of manually, this will probably happen in the form of a second private ansible file that deploys both tailscale and debug wpa_supplicant config
   #TODO: this sucks, find a better way to add repository or install tailscale in a different way, using /debian/ instead of raspbian because there's no raspbian bookworm release
   - name: Download tailscale-archive-keyring.gpg to add tailscale repository
     get_url:
@@ -95,29 +97,38 @@
 
   - name: Download startup script into /opt/startup
     get_url:
-      url: https://www.sasaa.nl/.raspi/startup.py
+      #TEMP: file in sasaa.nl needs to be edited
+      url: https://nlmln.github.io/startup.py
+      #url: https://www.sasaa.nl/.raspi/startup.py
       dest: /opt/startup/startup.py
       mode: 0755
       group: relay
       owner: relay
+ 
+  # we had issues with this in the past, at worst this does nothing, at best this fixes a potential issue where the file is not executable
+  - name: make sure that startup.py is in unix format
+    shell: 'dos2unix /opt/startup/startup.py'
+    become: yes
 
   - name: Create a Directory /opt/startup/templates
-    become: yes
     file:
       path: /opt/startup/templates
       state: directory
       mode: 0755
       owner: relay
       group: relay
+    become: yes
 
-#TODO: distribute webui as a tar file to ease future updates
-  - name: Download webui elements in /opt/startup/templates
+  #TODO: distribute webui as a tar file to ease future updates
+  - name: Download bowling.html in /opt/startup/templates
     get_url:
       url: https://www.sasaa.nl/.raspi/bowling.html
       dest: /opt/startup/templates/bowling.html
       mode: 0644
       group: relay
       owner: relay
+
+  - name: Download timers.html in /opt/startup/templates
     get_url:
       url: https://www.sasaa.nl/.raspi/timers.html
       dest: /opt/startup/templates/timers.html
@@ -125,9 +136,12 @@
       group: relay
       owner: relay
 
+  #TODO: if using /dev/mem is necessary, edit relay.service to run as User=relay and Group=root, if not edit to User=relay and Group=relay
   - name: Download the relay.service systemd service
     get_url:
-      url: https://www.sasaa.nl/.raspi/relay.service
+      #TEMP: file in sasaa.nl needs to be edited
+      url: https://nlmln.github.io/relay.service
+      #url: https://www.sasaa.nl/.raspi/relay.service
       dest: /etc/systemd/system/relay.service
       mode: 0755
       group: root
@@ -140,6 +154,19 @@
   - name: Set hostname relay for DNS discovery, making pi reachable at http://relay
     ansible.builtin.hostname:
       name: relay
+
+  - name: Replace old hostname with new one in the hosts file
+    ansible.builtin.replace:
+      path: /etc/hosts
+      regexp: 'raspberrypi'
+      replace: 'relay'
+    become: yes
+
+#TODO: deploy debug wifi configuration
+  - name: Turn on WLAN interface
+    shell: 'rfkill unblock wlan'
+    become: yes
+
 
 #this should be kept as the last thing in the playbook because in most cases it will cause ansible to disconnect quickly after being applied
   - name: Set static IPv4 IP via NetworkManager
