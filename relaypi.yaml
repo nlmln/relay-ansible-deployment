@@ -97,9 +97,7 @@
 
   - name: Download startup script into /opt/startup
     get_url:
-      #TEMP: file in sasaa.nl needs to be edited
-      url: https://nlmln.github.io/startup.py
-      #url: https://www.sasaa.nl/.raspi/startup.py
+      url: https://www.sasaa.nl/.raspi/startup.py
       dest: /opt/startup/startup.py
       mode: 0755
       group: relay
@@ -139,9 +137,7 @@
   #TODO: if using /dev/mem is necessary, edit relay.service to run as User=relay and Group=root, if not edit to User=relay and Group=relay
   - name: Download the relay.service systemd service
     get_url:
-      #TEMP: file in sasaa.nl needs to be edited
-      url: https://nlmln.github.io/relay.service
-      #url: https://www.sasaa.nl/.raspi/relay.service
+      url: https://www.sasaa.nl/.raspi/relay.service
       dest: /etc/systemd/system/relay.service
       mode: 0755
       group: root
@@ -149,7 +145,12 @@
     become: yes
 
   - name: Enable and start the relay service
-    systemd: state=started name=relay daemon_reload=yes
+    systemd: 
+      daemon_reload: yes
+      name: relay
+      state: started
+      enabled: yes
+    become: yes
 
   - name: Set hostname relay for DNS discovery, making pi reachable at http://relay
     ansible.builtin.hostname:
