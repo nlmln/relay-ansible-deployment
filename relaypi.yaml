@@ -117,22 +117,15 @@
       group: relay
     become: yes
 
-  #TODO: distribute webui as a tar file to ease future updates
-  - name: Download bowling.html in /opt/startup/templates
-    get_url:
-      url: https://www.sasaa.nl/.raspi/bowling.html
-      dest: /opt/startup/templates/bowling.html
-      mode: 0644
-      group: relay
+  - name: Download, extract, set ownership and permissions for the webui
+    ansible.builtin.unarchive:
+      src: https://www.sasaa.nl/.raspi/webui.tar
+      dest: /opt/startup/templates
+      remote_src: yes
       owner: relay
-
-  - name: Download timers.html in /opt/startup/templates
-    get_url:
-      url: https://www.sasaa.nl/.raspi/timers.html
-      dest: /opt/startup/templates/timers.html
-      mode: 0644
       group: relay
-      owner: relay
+      mode: 0644
+    become: yes
 
   #TODO: if using /dev/mem is necessary, edit relay.service to run as User=relay and Group=root, if not edit to User=relay and Group=relay
   - name: Download the relay.service systemd service
