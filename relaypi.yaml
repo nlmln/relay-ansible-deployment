@@ -12,7 +12,6 @@
 
   tasks:
 
-  #TODO: switch away from using root to actually using user relay, startup.py currently depends on accessing /dev/mem
   - name: Add the group 'relay'
     group:
       name: relay
@@ -21,7 +20,9 @@
   - name: Add the user 'relay'
     ansible.builtin.user:
       name: relay
-      groups: relay
+      groups:
+        - relay
+        - gpio
       shell: /sbin/nologin
       append: yes
     become: yes
@@ -134,7 +135,6 @@
       group: relay
       owner: relay
 
-  #TODO: if using /dev/mem is necessary, edit relay.service to run as User=relay and Group=root, if not edit to User=relay and Group=relay
   - name: Download the relay.service systemd service
     get_url:
       url: https://www.sasaa.nl/.raspi/relay.service
